@@ -288,11 +288,39 @@ def clickBtn(img,name=None, timeout=3, threshold = ct['default']):
             continue
 
         x,y,w,h = matches[0]
-        if not img is hero_img:
-            pyautogui.moveTo(int(random.uniform(x,x+w)),int(random.uniform(y,y+h)),1)
+        if img is hero_img:
+            pyautogui.moveTo(x+w/2,y+h/2,1)
+            time.sleep(random.randint(1,2))
             pyautogui.click()
             return True
-        pyautogui.moveTo(x+w/2,y+h/2,1)
+        
+        if img is sign_btn_img:
+            pyautogui.moveTo(x+w/2,y+h/2,1)
+            time.sleep(random.randint(1,2))
+            pyautogui.click()
+            return True
+        
+        if img is select_metamask_no_hover_img:
+            pyautogui.moveTo(x+w/2,y+h/2,1)
+            
+            time.sleep(random.randint(1,2))
+            pyautogui.click()
+            return True
+        
+        if img is select_wallet_hover_img:
+            pyautogui.moveTo(x+w/2,y+h/2,1)
+            time.sleep(random.randint(1,2))
+            pyautogui.click()
+            return True
+        
+        if img is select_wallet_hover_img:
+            pyautogui.moveTo(x+w/2,y+h/2,1)
+            time.sleep(random.randint(1,2))
+            pyautogui.click()
+            return True
+        
+        pyautogui.moveTo(int(random.uniform(x,x+w)),int(random.uniform(y,y+h)),1)
+        time.sleep(random.randint(1,2))
         pyautogui.click()
         return True
 
@@ -448,7 +476,9 @@ def login():
         return
 
     if clickBtn(connect_wallet_btn_img, name='connectWalletBtn', timeout = 10):
+        time.sleep(2)
         solveCapcha()
+        time.sleep(3)
         login_attempts = login_attempts + 1
         logger('Connect wallet button detected, logging in!')
         #TODO mto ele da erro e poco o botao n abre
