@@ -450,6 +450,8 @@ def goToHeroes():
     clickBtn(hero_img)
     time.sleep(random.randint(2,4))
     solveCapcha()
+    time.sleep(1)
+    solveCapcha()
     time.sleep(random.randint(3,5))
 
 def goToGame():

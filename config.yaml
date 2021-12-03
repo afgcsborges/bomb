@@ -92,7 +92,7 @@
   #
   # [pt_BR]
   # Valor padrão: 3
-  scroll_attemps: 2
+  scroll_attemps: 3
 
   # [en_US]
   # Default value: true
