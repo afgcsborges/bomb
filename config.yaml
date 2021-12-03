@@ -78,7 +78,7 @@
     #
     # [pt_BR]
     # Valor padrão: 0.9
-    green_bar: 0.8
+    green_bar: 0.9
 
   # [en_US]
   # Default value: 60
