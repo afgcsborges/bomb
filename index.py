@@ -9,32 +9,15 @@ import yaml
 
 import requests
 
-cat = """
-                                                _
-                                                \`*-.
-                                                 )  _`-.
-                                                .  : `. .
-                                                : _   '  \\
-                                                ; *` _.   `*-._
-                                                `-.-'          `-.
-                                                  ;       `       `.
-                                                  :.       .        \\
-                                                  . \  .   :   .-'   .
-                                                  '  `+.;  ;  '      :
-                                                  :  '  |    ;       ;-.
-                                                  ; '   : :`-:     _.`* ;
-                                               .*' /  .*' ; .*`- +'  `*'
-                                               `*-*   `*-*  `*-*'
-====== Please, consider buying me an coffe :) =========================
-==== 0xbd06182D8360FB7AC1B05e871e56c76372510dDf =======================
-==== https://www.paypal.com/donate?hosted_button_id=JVYSC6ZYCNQQQ =====
-=======================================================================
+import random
 
+start = """
+====== Bot Started =========================
 >>---> Press ctrl + c to kill the bot.
 >>---> Some configs can be fount in the config.yaml file.
 """
 
-print(cat)
+print(start)
 
 headers = {
     'authority': 'plausible.io',
@@ -305,6 +288,10 @@ def clickBtn(img,name=None, timeout=3, threshold = ct['default']):
             continue
 
         x,y,w,h = matches[0]
+        if not img is hero_img:
+            pyautogui.moveTo(int(random.uniform(x,x+w)),int(random.uniform(y,y+h)),1)
+            pyautogui.click()
+            return True
         pyautogui.moveTo(x+w/2,y+h/2,1)
         pyautogui.click()
         return True
@@ -432,10 +419,10 @@ def goToHeroes():
         global login_attempts
         login_attempts = 0
 
-    solveCapcha()
-    # time.sleep(5)
     clickBtn(hero_img)
-    # time.sleep(5)
+    time.sleep(random.randint(2,4))
+    solveCapcha()
+    time.sleep(random.randint(3,5))
 
 def goToGame():
     # in case of server overload popup

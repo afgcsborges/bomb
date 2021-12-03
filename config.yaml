@@ -10,14 +10,14 @@
     #
     # [pt_BR] Intervalo de tempo para verificar se há heróis disponíveis para trabalhar
     # Valor padrão (em minutos): 10
-    send_heroes_for_work: 10
+    send_heroes_for_work: 11
     
     # [en_US] Time interval to update heroes position in the map,
     # Default value (in minutes): 3
     #
     # [pt_BR] Intervalo de tempo para atualizar a posição dos heróis no mapa
     # Valor padrão (em minutos): 3
-    refresh_heroes_positions: 3
+    refresh_heroes_positions: 4
     
     # [en_US] Time interval to check for new maps
     # Default value (in minutes): 3 
@@ -50,7 +50,7 @@
     #
     # [pt_BR]
     # Valor padrão: 0.7
-    default: 0.7
+    default: 0.8
 
     # [en_US]
     # Default value: 0.8
@@ -78,7 +78,7 @@
     #
     # [pt_BR]
     # Valor padrão: 0.9
-    green_bar: 0.9
+    green_bar: 0.8
 
   # [en_US]
   # Default value: 60
@@ -92,7 +92,7 @@
   #
   # [pt_BR]
   # Valor padrão: 3
-  scroll_attemps: 3
+  scroll_attemps: 2
 
   # [en_US]
   # Default value: true
