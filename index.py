@@ -4,58 +4,36 @@ import mss
 import pyautogui
 import time
 import sys
-
 import yaml
-
-import requests
-
 import random
+from _thread import *
+from pynput.mouse import Controller
 
 start = """
-====== Bot Started =========================
->>---> Press ctrl + c to kill the bot.
->>---> Some configs can be fount in the config.yaml file.
+===================== Bot Started =====================
+--> Press ctrl + c to kill the bot.
+--> Some configs can be fount in the config.yaml file.
+=======================================================
 """
 
 print(start)
 
-headers = {
-    'authority': 'plausible.io',
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36',
-    'content-type': 'text/plain',
-    'accept': '*/*',
-    'sec-gpc': '1',
-    'origin': 'https://mpcabete.xyz',
-    'sec-fetch-site': 'cross-site',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-dest': 'empty',
-    'referer': 'https://mpcabete.xyz/',
-    'accept-language': 'en-US,en;q=0.9',
-}
-
-data = '{"n":"pageview","u":"https://mpcabete.xyz/bombcrypto/","d":"mpcabete.xyz","r":"https://mpcabete.xyz/","w":1182}'
-
-response = requests.post('https://plausible.io/api/event', headers=headers, data=data)
-
 if __name__ == '__main__':
-
     stream = open("config.yaml", 'r')
-    c = yaml.safe_load(stream)
-ct = c['threshold']
+    configs = yaml.safe_load(stream)
 
-pyautogui.PAUSE = c['time_intervals']['interval_between_moviments']
+### Config.Threshold ###
+ct = configs['threshold']
+
+pyautogui.PAUSE = configs['time_intervals']['interval_between_moviments']
 
 pyautogui.FAILSAFE = True
 hero_clicks = 0
 login_attempts = 0
 last_log_is_progress = False
 
-
-
-
-
-
-
+### Load Images ###
+home_btn_img = cv2.imread('targets/home.png')
 go_work_img = cv2.imread('targets/go-work.png')
 commom_img = cv2.imread('targets/commom-text.png')
 arrow_img = cv2.imread('targets/go-back-arrow.png')
@@ -75,46 +53,37 @@ piece = cv2.imread('targets/piece.png')
 robot = cv2.imread('targets/robot.png')
 slider = cv2.imread('targets/slider.png')
 
-
-###################### puzzle #############
+### Captcha Solver ###
 def findPuzzlePieces(result, piece_img, threshold=0.5):
     piece_w = piece_img.shape[1]
     piece_h = piece_img.shape[0]
     yloc, xloc = np.where(result >= threshold)
-
 
     r= []
     for (piece_x, piece_y) in zip(xloc, yloc):
         r.append([int(piece_x), int(piece_y), int(piece_w), int(piece_h)])
         r.append([int(piece_x), int(piece_y), int(piece_w), int(piece_h)])
 
-
     r, weights = cv2.groupRectangles(r, 1, 0.2)
 
     if len(r) < 2:
-        print('threshold = %.3f' % threshold)
         return findPuzzlePieces(result, piece_img,threshold-0.01)
 
     if len(r) == 2:
-        print('match')
         return r
 
     if len(r) > 2:
-        print('overshoot by %d' % len(r))
-
         return r
 
 def getRightPiece(puzzle_pieces):
     xs = [row[0] for row in puzzle_pieces]
     index_of_right_rectangle = xs.index(max(xs))
-
     right_piece = puzzle_pieces[index_of_right_rectangle]
     return right_piece
 
 def getLeftPiece(puzzle_pieces):
     xs = [row[0] for row in puzzle_pieces]
     index_of_left_rectangle = xs.index(min(xs))
-
     left_piece = puzzle_pieces[index_of_left_rectangle]
     return left_piece
 
@@ -128,14 +97,13 @@ def show(rectangles, img = None):
     for (x, y, w, h) in rectangles:
         cv2.rectangle(img, (x, y), (x + w, y + h), (255,255,255,255), 2)
 
-    # cv2.rectangle(img, (result[0], result[1]), (result[0] + result[2], result[1] + result[3]), (255,50,255), 2)
     cv2.imshow('img',img)
     cv2.waitKey(0)
 
 def getPiecesPosition(t = 150):
     popup_pos = positions(robot)
     if len(popup_pos) == 0:
-        print('puzzle not found')
+        logger('Captcha not found.')
         return
     rx, ry, _, _ = popup_pos[0]
 
@@ -153,16 +121,7 @@ def getPiecesPosition(t = 150):
     cropped = img[ y : y + h , x: x + w]
     blurred = cv2.GaussianBlur(cropped, (3, 3), 0)
     edges = cv2.Canny(blurred, threshold1=t/2, threshold2=t,L2gradient=True)
-    # img = cv2.Laplacian(img,cv2.CV_64F)
-
-    # gray_piece_img = cv2.cvtColor(piece, cv2.COLOR_BGR2GRAY)
     piece_img = cv2.cvtColor(piece, cv2.COLOR_BGR2GRAY)
-    print('----')
-    print(piece_img.shape)
-    print(edges.shape)
-    print('----')
-    # piece_img = cv2.Canny(gray_piece_img, threshold1=t/2, threshold2=t,L2gradient=True)
-    # result = cv2.matchTemplate(edges,piece_img,cv2.TM_CCOEFF_NORMED)
     result = cv2.matchTemplate(edges,piece_img,cv2.TM_CCORR_NORMED)
 
     puzzle_pieces = findPuzzlePieces(result, piece_img)
@@ -170,16 +129,12 @@ def getPiecesPosition(t = 150):
     if puzzle_pieces is None:
         return
 
-    # show(puzzle_pieces, edges)
-    # exit()
-
     absolute_puzzle_pieces = []
     for i, puzzle_piece in enumerate(puzzle_pieces):
         px, py, pw, ph = puzzle_piece
         absolute_puzzle_pieces.append( [ x + px, y + py, pw, ph])
 
     absolute_puzzle_pieces = np.array(absolute_puzzle_pieces)
-    # show(absolute_puzzle_pieces)
     return absolute_puzzle_pieces
 
 def getSliderPosition():
@@ -191,7 +146,7 @@ def getSliderPosition():
     return position
 
 def solveCapcha():
-    logger('checking for capcha')
+    logger('Checking for unsolved capcha!')
     pieces_start_pos = getPiecesPosition()
     if pieces_start_pos is None :
         return
@@ -203,42 +158,77 @@ def solveCapcha():
     pyautogui.moveTo(x+300 ,y,0.5)
     pieces_end_pos = getPiecesPosition()
 
-
     piece_start, _, _, _ = getLeftPiece(pieces_start_pos)
     piece_end, _, _, _ = getRightPiece(pieces_end_pos)
     piece_middle, _, _, _  = getRightPiece(pieces_start_pos)
     slider_start, _, = slider_start_pos
     slider_end, _ = getSliderPosition()
-    print (piece_start)
-    print (piece_end)
-    print (piece_middle)
-    print (slider_start)
-    print (slider_end)
 
     piece_domain = piece_end - piece_start
     middle_piece_in_percent = (piece_middle - piece_start)/piece_domain
-    print('middle_piece_in_percent{} '.format(middle_piece_in_percent ))
+    logger('Solving Captcha...')
 
     slider_domain = slider_end - slider_start
     slider_awnser = slider_start + (middle_piece_in_percent * slider_domain)
-    # arr = np.array([[int(piece_start),int(y-20),int(10),int(10)],[int(piece_middle),int(y-20),int(10),int(10)],[int(piece_end-20),int(y),int(10),int(10)],[int(slider_awnser),int(y),int(20),int(20)]])
 
     pyautogui.moveTo(slider_awnser,y,0.5)
     pyautogui.mouseUp()
 
-    # show(arr)
-    #########################################
+### Helpers ###
+def getRandomTwoDigitFloat(min = 2, max = 5):
+    return round(random.uniform(min, max), 2)
 
+def setNewRandomTimeBetweenMovements():
+    newTime = getRandomTwoDigitFloat(0.7,2)
+    pyautogui.PAUSE = newTime
+    logger('New time betwwen movements set to: {}'.format(newTime))
+
+def getCurTime():
+    return int(time.time())
+
+def randomMouseMove():
+    screenWidth, screenHeight = pyautogui.size()
+    randomX = getRandomTwoDigitFloat(screenWidth / 4, (screenWidth / 4) * 3)
+    randomY = getRandomTwoDigitFloat(screenHeight / 4, (screenHeight / 4) * 3)
+    randomTimeToMove = getRandomTwoDigitFloat(0.5,1.5)
+    pyautogui.moveTo(randomX,randomY,randomTimeToMove)
+
+def sleepRandom(min = 1, max = 2.5):
+    time.sleep(getRandomTwoDigitFloat(min,max))
+
+### Used to move away from click wallet button when game is stuck ###
+def moveToCenter():
+    screenWidth, screenHeight = pyautogui.size()
+    pyautogui.moveTo(screenWidth/2,screenHeight/2,0.5)
+
+### New thread to press F5 if somehow stuck ###
+def listenForGameCrash():
+    mouseController = Controller() #mouse movement controller
+    lastMoveTime = getCurTime() #current time
+    lastMousePos = mouseController.position #current mouse position
+    t = configs['time_intervals']
+
+    while True: 
+        time.sleep(t['check_for_game_crash'] * 60) #check or move at most once every 8 minutes
+
+        if (lastMousePos != Controller().position): #check if mouse moved
+            lastMoveTime = getCurTime() #set last moved time to now
+            lastMousePos = Controller().position #update mouse position
+
+        elif ((getCurTime() - lastMoveTime) > t['check_for_game_crash'] * 60):
+            pyautogui.press('f5') #move a little bit in each direction
+            moveToCenter()
+            lastMoveTime = getCurTime()
+
+### Logger function ###
 def logger(message, progress_indicator = False):
     global last_log_is_progress
-
-
 
     # Start progress indicator and append dots to in subsequent progress calls
     if progress_indicator:
         if not last_log_is_progress:
             last_log_is_progress = True
-            sys.stdout.write('\n => .')
+            sys.stdout.write('=> .')
             sys.stdout.flush()
         else:
             sys.stdout.write('.')
@@ -251,17 +241,13 @@ def logger(message, progress_indicator = False):
         sys.stdout.flush()
         last_log_is_progress = False
 
-
-
     datetime = time.localtime()
     formatted_datetime = time.strftime("%d/%m/%Y %H:%M:%S", datetime)
-
-    formatted_message = "[{}] \n => {} \n\n".format(formatted_datetime, message)
-
+    formatted_message = "[{}] => {} ".format(formatted_datetime, message)
 
     print(formatted_message)
 
-    if (c['save_log_to_file'] == True):
+    if (configs['save_log_to_file'] == True):
         logger_file = open("logger.log", "a")
         logger_file.write(formatted_message)
         logger_file.close()
@@ -272,9 +258,9 @@ def clickBtn(img,name=None, timeout=3, threshold = ct['default']):
     logger(None, progress_indicator=True)
     if not name is None:
         pass
-        # print('waiting for "{}" button, timeout of {}s'.format(name, timeout))
     start = time.time()
     clicked = False
+
     while(not clicked):
         matches = positions(img, threshold=threshold)
         if(len(matches)==0):
@@ -282,45 +268,33 @@ def clickBtn(img,name=None, timeout=3, threshold = ct['default']):
             if(hast_timed_out):
                 if not name is None:
                     pass
-                    # print('timed out')
                 return False
-            # print('button not found yet')
             continue
 
         x,y,w,h = matches[0]
         if img is hero_img:
             pyautogui.moveTo(x+w/2,y+h/2,1)
-            time.sleep(random.randint(1,2))
+            sleepRandom()
             pyautogui.click()
             return True
-        
         if img is sign_btn_img:
             pyautogui.moveTo(x+w/2,y+h/2,1)
-            time.sleep(random.randint(1,2))
+            sleepRandom()
             pyautogui.click()
             return True
-        
         if img is select_metamask_no_hover_img:
             pyautogui.moveTo(x+w/2,y+h/2,1)
-            
-            time.sleep(random.randint(1,2))
+            sleepRandom()
             pyautogui.click()
             return True
-        
         if img is select_wallet_hover_img:
             pyautogui.moveTo(x+w/2,y+h/2,1)
-            time.sleep(random.randint(1,2))
+            sleepRandom()
             pyautogui.click()
             return True
-        
-        if img is select_wallet_hover_img:
-            pyautogui.moveTo(x+w/2,y+h/2,1)
-            time.sleep(random.randint(1,2))
-            pyautogui.click()
-            return True
-        
+
         pyautogui.moveTo(int(random.uniform(x,x+w)),int(random.uniform(y,y+h)),1)
-        time.sleep(random.randint(1,2))
+        sleepRandom()
         pyautogui.click()
         return True
 
@@ -342,7 +316,6 @@ def positions(target, threshold=ct['default']):
 
     yloc, xloc = np.where(result >= threshold)
 
-
     rectangles = []
     for (x, y) in zip(xloc, yloc):
         rectangles.append([int(x), int(y), int(w), int(h)])
@@ -352,27 +325,25 @@ def positions(target, threshold=ct['default']):
     return rectangles
 
 def scroll():
-
     commoms = positions(commom_img, threshold = ct['commom'])
     if (len(commoms) == 0):
         # print('no commom text found')
         return
     x,y,w,h = commoms[len(commoms)-1]
     # print('moving to {},{} and scrolling'.format(x,y))
-#
-    pyautogui.moveTo(x,y,1)
 
-    if not c['use_click_and_drag_instead_of_scroll']:
-        pyautogui.scroll(-c['scroll_size'])
+    pyautogui.moveTo(x,y,getRandomTwoDigitFloat(0.8,1.2))
+
+    if not configs['use_click_and_drag_instead_of_scroll']:
+        pyautogui.scroll(-configs['scroll_size'])
     else:
-        pyautogui.dragRel(0,-c['click_and_drag_amount'],duration=1, button='left')
-
+        pyautogui.dragRel(0,-configs['click_and_drag_amount'],duration=getRandomTwoDigitFloat(0.8,1.7), button='left')
 
 def clickButtons():
     buttons = positions(go_work_img, threshold=ct['go_to_work_btn'])
     # print('buttons: {}'.format(len(buttons)))
     for (x, y, w, h) in buttons:
-        pyautogui.moveTo(x+(w/2),y+(h/2),1)
+        pyautogui.moveTo(x+(w/2),y+(h/2),getRandomTwoDigitFloat(0.7,1.3))
         pyautogui.click()
         global hero_clicks
         hero_clicks = hero_clicks + 1
@@ -411,7 +382,7 @@ def clickGreenBarButtons():
     # se tiver botao com y maior que bar y-10 e menor que y+10
     for (x, y, w, h) in not_working_green_bars:
         # isWorking(y, buttons)
-        pyautogui.moveTo(x+offset+(w/2),y+(h/2),1)
+        pyautogui.moveTo(x+offset+(w/2),y+(h/2),getRandomTwoDigitFloat(0.7,1.3))
         pyautogui.click()
         global hero_clicks
         hero_clicks = hero_clicks + 1
@@ -435,7 +406,7 @@ def clickFullBarButtons():
         logger('Clicking in %d heroes.' % len(not_working_full_bars))
 
     for (x, y, w, h) in not_working_full_bars:
-        pyautogui.moveTo(x+offset+(w/2),y+(h/2),1)
+        pyautogui.moveTo(x+offset+(w/2),y+(h/2),getRandomTwoDigitFloat(0.7,1.3))
         pyautogui.click()
         global hero_clicks
         hero_clicks = hero_clicks + 1
@@ -448,11 +419,11 @@ def goToHeroes():
         login_attempts = 0
 
     clickBtn(hero_img)
-    time.sleep(random.randint(2,4))
+    sleepRandom(2,4)
     solveCapcha()
-    time.sleep(1)
+    sleepRandom(1,1.5)
     solveCapcha()
-    time.sleep(random.randint(3,5))
+    sleepRandom(3,5)
 
 def goToGame():
     # in case of server overload popup
@@ -461,11 +432,12 @@ def goToGame():
     clickBtn(x_button_img)
 
     clickBtn(teasureHunt_icon_img)
+    setNewRandomTimeBetweenMovements()
 
 def refreshHeroesPositions():
     clickBtn(arrow_img)
     clickBtn(teasureHunt_icon_img)
-    # time.sleep(3)
+    sleepRandom(0.5,1)
     clickBtn(teasureHunt_icon_img)
 
 def login():
@@ -492,12 +464,12 @@ def login():
         # print('sign button clicked')
         # print('{} login attempt'.format(login_attempts))
         # time.sleep(5)
+        sleepRandom(10,15)
         if clickBtn(teasureHunt_icon_img, name='teasureHunt', timeout = 15):
             # print('sucessfully login, treasure hunt btn clicked')
             login_attempts = 0
-        # time.sleep(15)
-        return
-        # click ok button
+            return
+        login()
 
     if not clickBtn(select_metamask_no_hover_img, name='selectMetamaskBtn'):
         if clickBtn(select_wallet_hover_img, name='selectMetamaskHoverBtn', threshold = ct['select_wallet_buttons'] ):
@@ -521,30 +493,40 @@ def login():
         # time.sleep(15)
 
     if clickBtn(ok_btn_img, name='okBtn', timeout=5):
+        sleepRandom(11,12)
         pass
         # time.sleep(15)
         # print('ok button clicked')
 
+def waitHeroes():
+    #repeat times for retry detecting the Heroes screen
+    repeat = 5
+    for i in range(repeat):
+        home_pos = positions(home_btn_img, threshold=ct['go_to_work_btn'])
+        if str(home_pos) == '()':
+            logger('Heroes screen still not loaded. Retries left: %d' % (repeat - i))
+            time.sleep(5)
+            home_pos = positions(home_btn_img, threshold=ct['go_to_work_btn'])
+        else:
+            logger('Heroes Screen loaded successfully.')
+            return True
 
+    logger('Heroes Screen not loaded. Retrying next time')
+    goToGame()
 
 
 def refreshHeroes():
     goToHeroes()
-
-    if c['select_heroes_mode'] == "full":
-        logger("Sending heroes with full stamina bar to work!")
-    elif c['select_heroes_mode'] == "green":
-        logger("Sending heroes with green stamina bar to work!")
-    else:
-        logger("Sending all heroes to work!")
+    waitHeroes()
+    logger("Sending heroes to work!")
 
     buttonsClicked = 1
-    empty_scrolls_attempts = c['scroll_attemps']
+    empty_scrolls_attempts = configs['scroll_attemps']
 
     while(empty_scrolls_attempts >0):
-        if c['select_heroes_mode'] == 'full':
+        if configs['select_heroes_mode'] == 'full':
             buttonsClicked = clickFullBarButtons()
-        elif c['select_heroes_mode'] == 'green':
+        elif configs['select_heroes_mode'] == 'green':
             buttonsClicked = clickGreenBarButtons()
         else:
             buttonsClicked = clickButtons()
@@ -552,16 +534,13 @@ def refreshHeroes():
         if buttonsClicked == 0:
             empty_scrolls_attempts = empty_scrolls_attempts - 1
         scroll()
-        time.sleep(2)
+        sleepRandom(2,3)
     logger('{} heroes sent to work so far'.format(hero_clicks))
     goToGame()
 
-
-
-
 def main():
     time.sleep(5)
-    t = c['time_intervals']
+    t = configs['time_intervals']
 
     last = {
     "login" : 0,
@@ -569,6 +548,8 @@ def main():
     "new_map" : 0,
     "refresh_heroes" : 0
     }
+
+    start_new_thread(listenForGameCrash, ())
 
     while True:
         now = time.time()
@@ -597,13 +578,11 @@ def main():
             logger('Refreshing Heroes Positions.')
             refreshHeroesPositions()
 
-        #clickBtn(teasureHunt)
         logger(None, progress_indicator=True)
 
         sys.stdout.flush()
 
         time.sleep(1)
-
 
 main()
 
