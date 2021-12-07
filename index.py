@@ -27,7 +27,7 @@ ct = configs['threshold']
 
 pyautogui.PAUSE = configs['time_intervals']['interval_between_moviments']
 
-pyautogui.FAILSAFE = True
+pyautogui.FAILSAFE = False
 hero_clicks = 0
 login_attempts = 0
 last_log_is_progress = False
@@ -569,8 +569,15 @@ def main():
             last["new_map"] = now
             if clickBtn(new_map_btn_img):
                 with open('new-map.log','a') as new_map_log:
-                    new_map_log.write(str(time.time())+'\n')
+                    datetime = time.localtime()
+                    formatted_datetime = time.strftime("%d/%m/%Y %H:%M:%S", datetime)
+                    new_map_log.write(str(formatted_datetime)+'\n')
                 logger('New Map button clicked!')
+                sleepRandom(2,4)
+                solveCapcha()
+                sleepRandom(1,1.5)
+                solveCapcha()
+                sleepRandom(3,5)
 
         if now - last["refresh_heroes"] > t['refresh_heroes_positions'] * 60 :
             solveCapcha()
