@@ -133,6 +133,7 @@ def getSliderPositions(screenshot, popup_pos):
 
     if slider is None:
         print('no slider')
+        return False
         exit()
     (start_x, start_y) = slider
 
@@ -172,7 +173,9 @@ def solveCaptcha():
     digits = getDigits(d, img)
     slider_positions = getSliderPositions(screenshot, popup_pos)
     # moveSlider(screenshot,3,popup_pos)
-
+    if slider_positions == False:
+        print('Unable to solve Captcha!')
+        return
 
     for position in slider_positions:
         x, y = position
